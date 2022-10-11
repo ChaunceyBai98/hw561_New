@@ -7,7 +7,7 @@ import ga
 import os
 
 if __name__ == '__main__':
-    for _ in range(1):
+    for _ in range(3):
         startCounter = time.time()
         with open('exmp6', 'r') as f:
             rawData = f.readlines()
@@ -22,7 +22,7 @@ if __name__ == '__main__':
         distanceMap = ga.buildDistanceMap(pointSet)
         popNum = 300
         generation = 3000
-        mutatePoss = 0.1
+        mutatePoss = 0.8
         selectRate = 0.3
         possibilities = ga.getSelectPossibility(popNum)
         # middleAnswers = ga.createRandomApproxAnswers(len(pointSet), howMany=popNum)
