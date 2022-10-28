@@ -1,9 +1,6 @@
 import sys
-import random
-import timeit
-import math
+
 import argparse
-from collections import Counter
 from copy import deepcopy
 
 from read import *
@@ -20,14 +17,21 @@ class GO:
         self.size = n
         # self.previous_board = None # Store the previous board
         self.X_move = True  # X chess plays first
+        '''在初始化对象时就设置好了，不是接受的参数'''
         self.died_pieces = []  # Intialize died pieces to be empty
         self.n_move = 0  # Trace the number of moves
+        '''目前是第几手'''
         self.max_move = n * n - 1  # The max movement of a Go game
+        '''最大手数在这就设置好了，不是接受的参数'''
         self.komi = n / 2  # Komi rule
-        self.verbose = False  # Verbose only when there is a manual player
+        '''在初始化对象时就设置好了，不是接受的参数'''
+        self.verbose = False
+        '''人下:True, 程序下：False; Verbose only when there is a manual player'''
 
     def init_board(self, n):
         '''
+        self.board = n*n个0的二维数组
+        self.previous_board 也 = n*n个0的二维数组
         Initialize a board with size n*n.
 
         :param n: width and height of the board.
@@ -36,11 +40,13 @@ class GO:
         board = [[0 for x in range(n)] for y in range(n)]  # Empty space marked as 0
         # 'X' pieces marked as 1
         # 'O' pieces marked as 2
+        # 初始的时候，pre
         self.board = board
         self.previous_board = deepcopy(board)
 
     def set_board(self, piece_type, previous_board, board):
         '''
+        先提了死子，然后把棋盘给self.
         Initialize board status.
         :param previous_board: previous board state.
         :param board: current board state.
@@ -59,7 +65,13 @@ class GO:
         self.previous_board = previous_board
         self.board = board
 
-    def compare_board(self, board1, board2):
+    def ifTwoBoardSame(self, board1, board2):
+        '''
+        比较两个棋盘是不是一样，一样True，不一样False
+        :param board1:
+        :param board2:
+        :return:
+        '''
         for i in range(self.size):
             for j in range(self.size):
                 if board1[i][j] != board2[i][j]:
@@ -68,6 +80,7 @@ class GO:
 
     def copy_board(self):
         '''
+        返回的是一个go对象
         Copy the current board for potential testing.
 
         :param: None.
@@ -77,8 +90,7 @@ class GO:
 
     def detect_neighbor(self, i, j):
         '''
-        Detect all the neighbors of a given stone.
-
+        返回一个棋子相邻的坐标（中间四个，边三个，角两个）
         :param i: row number of the board.
         :param j: column number of the board.
         :return: a list containing the neighbors row and column (row, column) of position (i, j).
@@ -94,8 +106,8 @@ class GO:
 
     def detect_neighbor_ally(self, i, j):
         '''
+        只返回相邻的友军，就算是一大片友军连在一块，也最多返回四个
         Detect the neighbor allies of a given stone.
-
         :param i: row number of the board.
         :param j: column number of the board.
         :return: a list containing the neighbored allies row and column (row, column) of position (i, j).
@@ -112,8 +124,8 @@ class GO:
 
     def ally_dfs(self, i, j):
         '''
+        返回与这个棋子相连的所有的友军，包括他自己
         Using DFS to search for all allies of a given stone.
-
         :param i: row number of the board.
         :param j: column number of the board.
         :return: a list containing the all allies row and column (row, column) of position (i, j).
@@ -131,6 +143,7 @@ class GO:
 
     def find_liberty(self, i, j):
         '''
+        返回的是这块棋有没有气，有气返回True，无气返回False
         Find liberty of a given stone. If a group of allied stones has no liberty, they all die.
 
         :param i: row number of the board.
@@ -150,6 +163,7 @@ class GO:
 
     def find_died_pieces(self, piece_type):
         '''
+        返回一个由死棋坐标构成的数组
         Find the died stones that has no liberty in the board for a given piece type.
 
         :param piece_type: 1('X') or 2('O').
@@ -169,6 +183,7 @@ class GO:
 
     def remove_died_pieces(self, piece_type):
         '''
+        把piece_type的死子都设置为0
         Remove the dead stones in the board.
 
         :param piece_type: 1('X') or 2('O').
@@ -182,7 +197,7 @@ class GO:
 
     def remove_certain_pieces(self, positions):
         '''
-        Remove the stones of certain locations.
+        把这个位置的棋子提掉（设置为0）
 
         :param positions: a list containing the pieces to be removed row and column(row, column)
         :return: None.
@@ -193,14 +208,15 @@ class GO:
         self.update_board(board)
 
     def place_chess(self, i, j, piece_type):
-        '''
+        """
+        尝试把i,j的符号改成piece_type，并且修改了previous board和board为，此手之前和此手之后的棋盘
+        对方就知道你下在哪了
         Place a chess stone in the board.
-
-        :param i: row number of the board.
-        :param j: column number of the board.
-        :param piece_type: 1('X') or 2('O').
-        :return: boolean indicating whether the placement is valid.
-        '''
+        param i: row number of the board.
+        param j: column number of the board.
+        param piece_type: 1('X') or 2('O').
+        return boolean indicating whether the placement is valid.
+        """
         board = self.board
 
         valid_place = self.valid_place_check(i, j, piece_type)
@@ -215,6 +231,7 @@ class GO:
 
     def valid_place_check(self, i, j, piece_type, test_check=False):
         '''
+        检测落点是否有效：是否在棋盘范围内；这个位置是否已经有子了；下在这是不是会自杀；是不是在老打一个劫；只是检测，不会改棋盘
         Check whether a placement is valid.
 
         :param i: row number of the board.
@@ -245,17 +262,21 @@ class GO:
             return False
 
         # Copy the board for testing
+        # 把自己重新拷贝了一分（不只是棋盘）
         test_go = self.copy_board()
         test_board = test_go.board
 
         # Check if the place has liberty
+        # 如果下进去还有气，那随便下
         test_board[i][j] = piece_type
         test_go.update_board(test_board)
         if test_go.find_liberty(i, j):
             return True
 
         # If not, remove the died pieces of opponent and check again
+        # 下进去没气，看看是不是吃对手的棋
         test_go.remove_died_pieces(3 - piece_type)
+        # 提子了，还是没气，那就不能下
         if not test_go.find_liberty(i, j):
             if verbose:
                 print('Invalid placement. No liberty found in this position.')
@@ -263,7 +284,8 @@ class GO:
 
         # Check special case: repeat placement causing the repeat board state (KO rule)
         else:
-            if self.died_pieces and self.compare_board(self.previous_board, test_go.board):
+            # 提子了，有气，那看看是不是打劫，是的话也不行。
+            if self.died_pieces and self.ifTwoBoardSame(self.previous_board, test_go.board):
                 if verbose:
                     print('Invalid placement. A repeat move not permitted by the KO rule.')
                 return False
@@ -271,6 +293,7 @@ class GO:
 
     def update_board(self, new_board):
         '''
+        直接给你换张棋盘
         Update the board with new_board
 
         :param new_board: new board.
@@ -280,6 +303,7 @@ class GO:
 
     def visualize_board(self):
         '''
+        把棋盘打印到命令行
         Visualize the board.
 
         :return: None
@@ -300,6 +324,7 @@ class GO:
 
     def game_end(self, piece_type, action="MOVE"):
         '''
+        超过最多步数/连续两张棋盘一样，并且上一步是PASS
         Check if the game should end.
 
         :param piece_type: 1('X') or 2('O').
@@ -311,12 +336,13 @@ class GO:
         if self.n_move >= self.max_move:
             return True
         # Case 2: two players all pass the move.
-        if self.compare_board(self.previous_board, self.board) and action == "PASS":
+        if self.ifTwoBoardSame(self.previous_board, self.board) and action == "PASS":
             return True
         return False
 
     def score(self, piece_type):
         '''
+        返回棋盘上有多少piece_type的子
         Get score of a player by counting the number of stones.
 
         :param piece_type: 1('X') or 2('O').
@@ -333,6 +359,7 @@ class GO:
 
     def judge_winner(self):
         '''
+        返回1赢/2赢/0平局
         Judge the winner of the game by number of pieces for each player.
 
         :param: None.
@@ -359,6 +386,7 @@ class GO:
         '''
         self.init_board(self.size)
         # Print input hints and error message if there is a manual player
+        # 看看是不是手动下棋
         if player1.type == 'manual' or player2.type == 'manual':
             self.verbose = True
             print('----------Input "exit" to exit the program----------')
@@ -387,9 +415,9 @@ class GO:
 
             # Game continues
             if piece_type == 1:
-                action = player1.get_input(self, piece_type)
+                action = player1.minMaxABCut(self, piece_type)
             else:
-                action = player2.get_input(self, piece_type)
+                action = player2.minMaxABCut(self, piece_type)
 
             if verbose:
                 player = "X" if piece_type == 1 else "O"
@@ -415,6 +443,12 @@ class GO:
 
 
 def judge(n_move, verbose=False):
+    """
+    返回谁赢、或者平局
+    :param n_move: 第几手
+    :param verbose: 是不是跟人下
+    :return: 谁赢、或者平局
+    """
     N = 5
 
     piece_type, previous_board, board = readInput(N)
@@ -422,24 +456,27 @@ def judge(n_move, verbose=False):
     go.verbose = verbose
     go.set_board(piece_type, previous_board, board)
     go.n_move = n_move
+
     try:
+        # 最近一手棋要下的位置
         action, x, y = readOutput()
     except:
         print("output.txt not found or invalid format")
         sys.exit(3 - piece_type)
-
+    # 如果是落子
     if action == "MOVE":
         if not go.place_chess(x, y, piece_type):
+            # 下了一个不能下的地方，胜利直接让给对面
             print('Game end.')
             print('The winner is {}'.format('X' if 3 - piece_type == 1 else 'O'))
             sys.exit(3 - piece_type)
-
+        # 落子了，看看能不能提子
         go.died_pieces = go.remove_died_pieces(3 - piece_type)
 
     if verbose:
         go.visualize_board()
         print()
-
+    # 如果游戏结束
     if go.game_end(piece_type, action):
         result = go.judge_winner()
         if verbose:
@@ -449,11 +486,12 @@ def judge(n_move, verbose=False):
             else:
                 print('The winner is {}'.format('X' if result == 1 else 'O'))
         sys.exit(result)
-
+    # 游戏没有结束，轮到对面下（这个文件是host，对手指上一手棋的对手）
     piece_type = 2 if piece_type == 1 else 1
-
+    # 如果上一手是PASS,那棋盘没变
     if action == "PASS":
         go.previous_board = go.board
+    # 对面下，当前方下之前的棋盘，下之后的棋盘
     writeNextInput(piece_type, go.previous_board, go.board)
 
     sys.exit(0)
@@ -466,5 +504,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     judge(args.move, args.verbose)
-
-

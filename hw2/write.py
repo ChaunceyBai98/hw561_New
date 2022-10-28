@@ -11,7 +11,6 @@ def writeOutput(result, path="output.txt"):
         res = "PASS"
     else:
         res += str(result[0]) + ',' + str(result[1])
-
     with open(path, 'w') as f:
         f.write(res)
 
